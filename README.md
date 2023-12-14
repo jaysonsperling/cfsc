@@ -2,6 +2,9 @@
 
 Using JSON configuration files, create a complicated file structure that includes nestled folders and files of various sizes.
 
+## Executing
+`ruby create_tree.rb`
+
 ## Configuration Files
 ### config.json
 #### Example configuration:
