@@ -4,6 +4,13 @@ module Kernel
   # Yes, I know this is hacky.
 
   def load_and_validate_config_file(config_file, parameters)
+    # Parameters:
+    #    config_file: String, the path to the config file that we need to load
+    #    parameters: String Array, the parameters that the config file must have in order to pass
+    #
+    # Returns:
+    #    No return
+
     puts "\t[#{config_file}]: Beginning load and validation of configuration file"
     # Load the file and throw an error if it failed
     begin
@@ -17,13 +24,13 @@ module Kernel
     begin
       config = JSON.parse(config_json)
     rescue => e
-      abort "\t[#{config_file}]: Unable to parse the JSON configuration from #{config_file}:\n#{e}"
+      abort "\t[#{config_file}]: Unable to parse the JSON configuration:\n#{e}"
     end
 
     # Make sure that the configuration has the parameters that we need
     parameters.each do |param|
       unless config.has_key?(param)
-        abort "\tError: Configuration file #{config_file} is missing parameter #{param}"
+        abort "\t[#{config_file}] Error: Configuration file is missing parameter #{param}"
       end
     end
 
@@ -37,15 +44,14 @@ module Kernel
     #    path: String, fully qualified folder path (i.e. /Users/jayson/scripts)
     #
     # Returns:
-    #    true/false
+    #    No return
     #
-    # We do a Try/Catch here to make sure the folder is created otherwise we present an error
 
     # Check to see if directory already exists and bomb out if it does
     begin
       Dir.mkdir(path)
-    rescue TypeError
-      abort "Can not create path as it's empty: #{path}"
+    rescue TypeError # this happens if the path is empty
+      abort 'Unable to create the path as the path is empty - please check your layers configuration'
     rescue => e
       abort "Unable to create path #{path}:\n\t#{e}"
     end
@@ -59,7 +65,7 @@ module Kernel
     #    source: Hardwiring this to "/dev/urandom" because anything else is more expensive
     #
     # Returns:
-    #   true/false
+    #    No return
 
     valid_methods = %w(dd mkfile)
 
@@ -76,8 +82,6 @@ module Kernel
     # Preflight checks complete, let's do the thing
     case method
       when 'dd'
-        # dd if=/dev/urandom of=<file> bs=<size[b (defaulit)|k|m|g> count=<total blocks>
-
         # dd requires the block size to have only one character, so we need to see if there
         # is more than one character at the end, and if so, chop off the last character
         if size =~ /[. 0-9]+(KB|MB|GB)/i
@@ -86,28 +90,25 @@ module Kernel
           dd_size = size
         end
 
+        # dd doesn't like spaces in the output parameter, so wrap in single quotes if there
+        # are any whitespaces in the 'path' name
         if path =~ /\s/
           dd_path = "'#{path}'"
         else
           dd_path = path
         end
 
-        dd_command = "dd if=/dev/urandom of=#{dd_path} bs=#{dd_size} count=1"
+        dd_command = "dd if=#{source} of=#{dd_path} bs=#{dd_size} count=1"
 
         stdout, stderr, status = Open3.capture3(dd_command)
 
-        abort "Unable to create file #{path}:\n\t#{stderr}" unless status.success?
-
-        return true        
+        abort "dd: Unable to create file #{path}:\n\t#{stderr}" unless status.success?
       when 'mkfile'
-        # mkfile -n size[b|k|m|g] <filename>
         mkfile_command = "mkfile -n #{size} #{path}}"
 
         stdout, stderr, status = Open3.capture3(mkfile_command)
 
         abort "mkfile: Unable to create file #{path}:\n\t#{stderr}" unless status.success?
-
-        return true
       else
         abort "Invalid file creation method was used: #{method}, use one of: #{valid_methods.join(' ')}"
     end
@@ -118,7 +119,7 @@ module Kernel
     #   layers: Hash of all of the layers
     #
     # Returns:
-    #   paths: Hash that includes {"<layer_id>" => "<fully qualified parent path>", ...}
+    #   Hash of all of the paths that will need to be created
     #
     # This function will build a path list of every layer's folders so we can actually
     # create the nestled folder easily
@@ -136,9 +137,6 @@ module Kernel
           full_path = "#{layers['root']}/#{folder}"
           parent_path = layers['root']
         else
-          # Only going to support 1 level deeper at this moment...
-          # Need to seek through the entire layers collection and build the appropriate path 
-          # Yes, there's a better way to do this, I know...
           paths.each do |_, data|
             # We need to check other paths to see if it has a parent_path that matches our own
             if layer['parent'] == data['folder']
