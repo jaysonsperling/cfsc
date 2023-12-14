@@ -1,0 +1,29 @@
+{
+  "root": "/Users/jayson/Scripts/Ruby/cfsc/tree",
+  "layers": [
+    {
+      "id": "level_1",
+      "parent": "root",
+      "number_of_folders": 10,
+      "folder_name_mask": "root-1_%",
+      "number_of_files": 2,
+      "size_of_files": "200MB",
+      "file_name_mask": "ES Tracker-V%.xlsx"
+    },
+    {
+      "id": "level_2",
+      "parent": "root",
+      "number_of_folders": 1,
+      "folder_name_mask": "root-2_%",
+      "number_of_files": 5,
+      "size_of_files": "500MB",
+      "file_name_mask": "file_%.tmp"
+    },
+    {
+      "id": "level_2_empty_dirs",
+      "parent": "root-2_1",
+      "number_of_folders": 1,
+      "folder_name_mask": "level2empty-%"
+    }
+  ]
+}
